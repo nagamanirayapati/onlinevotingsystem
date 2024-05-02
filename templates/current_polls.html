@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current Polls</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Current Polls</h1>
+    </header>
+    <main>
+        <h2>Choose Position:</h2>
+        <select name="dropSelect" id="positionSelect" onfocus="populatePositions()">
+            <option value="" selected>Select Position</option>
+        </select>
+        <button onclick="showCandidates()">See Candidates</button>
+
+                <div id="candidatesList" style="display: none;">
+                    <!-- Candidate list will be displayed here -->
+                </div>
+    </main>
+    <script>
+        function populatePositions() {
+            fetch('/get_positionnames')
+                .then(response => response.json())
+                .then(data => {
+                    var positionSelect = document.getElementById("positionSelect");
+                    positionSelect.innerHTML = "";
+                    data.forEach(position => {
+                        var option = document.createElement("option");
+                        option.value = position;
+                        option.textContent = position;
+                        positionSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error("Error:", error));
+        }
+
+        //Function to showcandidateslist
+        function showCandidates() {
+            var position = document.getElementById("positionSelect").value;
+            // Send a request to the backend to get the candidates for the selected position
+            fetch(`/get_candidates?position=${position}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Display the candidates list
+                    var candidatesList = document.getElementById("candidatesList");
+                    candidatesList.innerHTML = ""; // Clear previous content
+                    data.forEach(candidate => {
+                        var candidateDiv = document.createElement("div");
+                        candidateDiv.textContent = candidate.candidate_name;
+                        var voteButton = document.createElement("button");
+                        voteButton.textContent = "Vote";
+                        voteButton.onclick = function () {
+                            // Send a request to the backend to register the vote for this candidate
+                            fetch('/vote', {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        position: position,
+        candidate: candidate.id
+    })
+})
+                                .then(response => {
+                                    if (response.ok) {
+                                        alert("Vote registered successfully!");
+                                    } else {
+                                        alert("Failed to register vote.");
+                                    }
+                                })
+                                .catch(error => console.error("Error:", error));
+                        };
+                        candidateDiv.appendChild(voteButton);
+                        candidatesList.appendChild(candidateDiv);
+                    });
+                    candidatesList.style.display = "block"; // Show the candidate list
+                })
+                .catch(error => console.error("Error:", error));
+        }
+    </script>
+    <footer>
+        <p>&copy; 2024 Your Website</p>
+    </footer>
+</body>
+
+</html>
